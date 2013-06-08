@@ -1,6 +1,6 @@
 <?php
 
-/* Copyright 2010-2012 Mo McRoberts.
+/* Copyright 2010-2013 Mo McRoberts.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
+require_once(PLATFORM_LIB . 'uri.php');
 
 abstract class DBIndex
 {
@@ -51,7 +53,18 @@ abstract class DBCol
 	const BIG = 4; /* Use largest available field width (e.g., BIGINT vs INT, LONGTEXT vs TEXT) */
 }
 
-abstract class DBSchema
+interface IDBSchema
+{
+    public function moduleVersion($moduleId);
+    public function setModuleVersion($moduleId, $newVersion, $comment = null);
+    
+	public function dropTable($name);
+	public function renameTable($oldName, $newName);
+	public function table($name);
+    public function tableWithOptions($name, $options);
+}
+
+abstract class DBSchema implements IDBSchema
 {
 	public $db; /* Associated database connection */
 	
@@ -59,16 +72,7 @@ abstract class DBSchema
 	
 	public static function schemaForConnection($connection)
 	{
-		switch($connection->dbms)
-		{
-			case 'mysql':
-				require_once(dirname(__FILE__) . '/db/mysql-schema.php');
-				return new MySQLSchema($connection);
-			case 'sqlite3':
-				require_once(dirname(__FILE__) . '/db/sqlite3-schema.php');
-				return new SQLite3Schema($connection);
-		}
-		return null;
+		return URI::handlerForScheme($connection->dbms, 'DBSchema', false, $connection);
 	}
 	
 	public function __construct($connection)

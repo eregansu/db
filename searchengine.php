@@ -15,13 +15,7 @@
  *  limitations under the License.
  */
 
-require_once(dirname(__FILE__) . '/uri.php');
-
-URI::register('http', 'SearchEngine', array('class' => 'GenericWebSearch'));
-URI::register('https', 'SearchEngine', array('class' => 'GenericWebSearch'));
-URI::register('dbplite', 'SearchEngine', array('file' => dirname(__FILE__) . '/search/dbpedialite.php', 'class' => 'DbpediaLiteSearch'));
-URI::register('xapian+file', 'SearchEngine', array('file' => dirname(__FILE__) . '/search/xapiansearch.php', 'class' => 'XapianSearch'));
-URI::register('xapian+file', 'SearchIndexer', array('file' => dirname(__FILE__) . '/search/xapiansearch.php', 'class' => 'XapianIndexer'));
+require_once(PLATFORM_LIB . 'uri.php');
 
 interface ISearchEngine
 {

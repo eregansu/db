@@ -1,6 +1,6 @@
 <?php
 
-/* Copyright 2009-2012 Mo McRoberts.
+/* Copyright 2009-2013 Mo McRoberts.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -20,11 +20,7 @@
  * @source http://github.com/nexgenta/eregansu/blob/master/lib/db.php
  */
 
-require_once(dirname(__FILE__) . '/uri.php');
-
-URI::register('mysql', 'Database', array('file' => dirname(__FILE__) . '/db/mysql.php', 'class' => 'MySQL'));
-URI::register('sqlite3', 'Database', array('file' => dirname(__FILE__) . '/db/sqlite3.php', 'class' => 'SQLite3'));
-URI::register('ldap', 'Database', array('file' => dirname(__FILE__) . '/directory/ldap.php', 'class' => 'LDAP'));
+require_once(PLATFORM_LIB . 'uri.php');
 
 /***********************************************************************
  *

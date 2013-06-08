@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-uses('db');
+require_once(dirname(__FILE__) . '/../db.php');
 
 if(!defined('MYSQL_SOCKET')) define('MYSQL_SOCKET', realpath(dirname(__FILE__) . '/data/mysql.sock'));
 

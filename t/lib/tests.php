@@ -17,8 +17,9 @@
 
 define('EREGANSU_SKIP_CONFIG', true);
 define('LOGFILE', 'tests.log');
+define('PLATFORM_ROOT', realpath(dirname(__FILE__) . '/../../..') . '/');
 
-require_once(dirname(__FILE__) . '/../../../framework/platform.php');
+require_once(PLATFORM_ROOT . 'framework/platform.php');
 require_once(PLATFORM_ROOT . 'testsuite/testsuite.php');
 
 $suite = TestSuite::suiteFromXML('tests.xml', LOGFILE);
