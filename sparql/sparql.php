@@ -25,6 +25,7 @@ class SPARQL implements IDatabase
     protected $endpoint;
     protected $updateEndpoint;
     protected $queryEndpoint;
+    protected $stderr;
     
     public function __construct($info)
     {
@@ -40,7 +41,13 @@ class SPARQL implements IDatabase
         {
             $info['path'] .= '/';
         }
+        $this->stderr = fopen('php://stderr', 'w');
         $this->endpoint = new URI($info);
+        $this->setEndpoints();
+    }
+    
+    protected function setEndpoints()
+    {
         $e = new URI($this->endpoint);
         $e->path .= 'update/';
         $e->query = null;
@@ -50,25 +57,23 @@ class SPARQL implements IDatabase
         $e->path .= 'sparql/';
         $e->query = null;
         $e->fragment = null;
-        $this->queryEndpoint = strval($e);
+        $this->queryEndpoint = strval($e);        
     }
     
     /* Execute a SPARQL query or update statement */
-    protected function execute($sparql, $params = null)
+    protected function execute($sparql, $params = null, $endpoint = null, $var = 'query')
     {
         if($params !== null)
         {
     		$sparql = preg_replace('/(\?.?)/e', "\$this->_quote(\"\\1\", \$params)", $sparql);        
         }
-        if(preg_match('!^\s*(ASK|SELECT)\s+!i', $sparql) || !isset($this->updateEndpoint))
+        if($endpoint === null)
         {
             $endpoint = $this->queryEndpoint;
-            $var = 'query';
         }
-        else
+        if(defined('EREGANSU_SPARQL_DEBUG_QUERIES'))
         {
-            $endpoint = $this->updateEndpoint;
-            $var = 'update';
+            fprintf($this->stderr, "[%s:%s]\n", $var, $sparql);
         }
         $c = new Curl($endpoint);
         $c->httpVersion = CURL_HTTP_VERSION_1_0;
@@ -111,6 +116,29 @@ class SPARQL implements IDatabase
 	{
 		if(!is_array($params)) $params = array();
 		$result = $this->execute($query, $params);
+        if(isset($result['payload']['results']['boolean']))
+        {
+            return $result['payload']['results']['boolean'];
+        }        
+        return true;
+	}
+
+	/* Execute any (parameterized) update, expecting a boolean result */	
+    public function update($query)
+    {
+		$params = func_get_args();
+		$result = $this->execute($query, $params, $this->updateEndpoint, 'update');
+        if(isset($result['payload']['results']['boolean']))
+        {
+            return $result['payload']['results']['boolean'];
+        }
+        return true;
+    }
+    
+	public function updateArray($query, $params)
+	{
+		if(!is_array($params)) $params = array();
+		$result = $this->execute($query, $params, $this->updateEndpoint, 'update');
         if(isset($result['payload']['results']['boolean']))
         {
             return $result['payload']['results']['boolean'];
@@ -254,12 +282,13 @@ class SPARQL implements IDatabase
         {
             return $str;
         }
+        $str = substr($str, 1);
         $param = array_shift($params);
         if($param instanceof URI)
         {
-            return '<' . $param . '>';
+            return '<' . $param . '>' . $str;
         }
-        return '"' . addslashes($param) . '"';
+        return '"' . addslashes($param) . '"' . $str;
     }
     
     protected function translate($binding)

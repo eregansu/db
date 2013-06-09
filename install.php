@@ -38,4 +38,10 @@ class BuiltinDBModuleInstall extends BuiltinModuleInstaller
 		fwrite($file, "\$URI_SCHEMES['xapian+file']['SearchEngine'] = array('file' => PLATFORM_ROOT . 'db/search/xapian.php', 'class' => 'XapianSearch');\n");
 		fwrite($file, "\$URI_SCHEMES['xapian+file']['SearchIndexer'] = array('file' => PLATFORM_ROOT . 'db/search/xapian.php', 'class' => 'XapianIndexer');\n");
 	}
+    
+    public function writeInstanceConfig($file)
+    {
+        fwrite($file, "/* Define the below to log executed SPARQL statements */\n");
+        fwrite($file, "/* define('EREGANSU_SPARQL_DEBUG_QUERIES', true); */\n\n");
+    }
 }
