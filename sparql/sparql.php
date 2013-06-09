@@ -53,23 +53,30 @@ class SPARQL implements IDatabase
         $this->queryEndpoint = strval($e);
     }
     
-    /* Execute a pre-formatted SPARQL query */
-    protected function execute($sparql, $expectResult = false)
+    /* Execute a SPARQL query or update statement */
+    protected function execute($sparql, $params = null)
     {
-        $c = new Curl($expectResult ? $this->queryEndpoint : $this->updateEndpoint);
+        if($params !== null)
+        {
+    		$sparql = preg_replace('/(\?.?)/e', "\$this->_quote(\"\\1\", \$params)", $sparql);        
+        }
+        if(preg_match('!^\s*(ASK|SELECT)\s+!i', $sparql) || !isset($this->updateEndpoint))
+        {
+            $endpoint = $this->queryEndpoint;
+            $var = 'query';
+        }
+        else
+        {
+            $endpoint = $this->updateEndpoint;
+            $var = 'update';
+        }
+        $c = new Curl($endpoint);
         $c->httpVersion = CURL_HTTP_VERSION_1_0;
         $c->headers['Accept'] = 'application/json;q=1.0, application/sparql-results+json;q=1.0, */*;q=0.5';
         $c->headers['Expect'] = null;
         $c->headers['Connection'] = 'close';
         $c->headers['Transfer-Encoding'] = null;
-        if($expectResult)
-        {
-            $payload = http_build_query(array('query' => $sparql));
-        }
-        else
-        {
-            $payload = http_build_query(array('update' => $sparql));        
-        }
+        $payload = http_build_query(array($var => $sparql));
         $c->headers['Content-Length'] = strlen($payload) ;
         $c->postFields = $payload;
         $c->httpPOST = true;
@@ -88,13 +95,11 @@ class SPARQL implements IDatabase
         return $result;
     }
        
-	/* Execute any (parametized) statement, expecting a boolean result */	
+	/* Execute any (parameterized) statement, expecting a boolean result */	
     public function exec($query)
     {
 		$params = func_get_args();
-		array_shift($params);
-		$sparql = preg_replace('/(\?.?)/e', "\$this->_quote(\"\\1\", \$params)", $query);
-		$result = $this->execute($sparql, false);
+		$result = $this->execute($query, $params);
         if(isset($result['payload']['results']['boolean']))
         {
             return $result['payload']['results']['boolean'];
@@ -105,8 +110,7 @@ class SPARQL implements IDatabase
 	public function execArray($query, $params)
 	{
 		if(!is_array($params)) $params = array();
-		$sparql = preg_replace('/(\?.?)/e', "\$this->_quote(\"\\1\", \$params)", $query);
-		$result = $this->execute($sparql, false);
+		$result = $this->execute($query, $params);
         if(isset($result['payload']['results']['boolean']))
         {
             return $result['payload']['results']['boolean'];
@@ -114,13 +118,12 @@ class SPARQL implements IDatabase
         return true;
 	}
 
-    /* Execute any (parametized) statement, expecting a resultset */
+    /* Execute any (parameterized) statement, expecting a resultset */
 	public function query($query)
 	{
 		$params = func_get_args();
 		array_shift($params);
-		$sparql = preg_replace('/(\?.?)/e', "\$this->_quote(\"\\1\", \$params)", $query);
-		$result = $this->execute($sparql, true);
+		$result = $this->execute($query, $params);
         if(!is_array($result['payload']))
         {
             return null;
@@ -128,19 +131,123 @@ class SPARQL implements IDatabase
         return new SPARQLResultSet($result['payload']);
 	}
     
-    /* Execute any (parametized) statement, expecting a resultset */
 	public function queryArray($query, $params)
 	{
 		if(!is_array($params)) $params = array();
-		$sparql = preg_replace('/(\?.?)/e', "\$this->_quote(\"\\1\", \$params)", $query);
-		$result = $this->execute($sparql, true);
+		$result = $this->execute($query, $params);
         if(!is_array($result['payload']))
         {
             return null;
         }
         return new SPARQLResultSet($result['payload']);
 	}
-        
+    
+    /* Fetch rows an array */
+    public function rows($query)
+    {
+		$params = func_get_args();
+		array_shift($params);
+		$result = $this->execute($query, $params);
+        if(!is_array($result['payload']) || !isset($result['payload']['results']['bindings']))
+        {
+            return null;
+        }
+        $rows = array();
+        foreach($result['payload']['results']['bindings'] as $row)
+        {
+            $rows[] = $this->translate($row);
+        }
+        return $rows;
+    }
+    
+    public function rowsArray($query, $params)
+    {
+        if(!is_array($params)) $params = array();
+		$result = $this->execute($query, $params);
+        if(!is_array($result['payload']) || !isset($result['payload']['results']['bindings']))
+        {
+            return null;
+        }
+        $rows = array();
+        foreach($result['payload']['results']['bindings'] as $row)
+        {
+            $rows[] = $this->translate($row);
+        }
+        return null;
+    }
+    
+    /* Fetch a single row */
+    public function row($query)
+    {
+		$params = func_get_args();
+		array_shift($params);
+		$result = $this->execute($query . ' LIMIT 1', $params);
+        if(!is_array($result['payload']) || !isset($result['payload']['results']['bindings']))
+        {
+            return null;
+        }
+        foreach($result['payload']['results']['bindings'] as $row)
+        {
+            return $this->translate($row);
+        }
+        return null;
+    }
+    
+    public function rowArray($query, $params)
+    {
+        if(!is_array($params)) $params = array();
+		$result = $this->execute($query . ' LIMIT 1', $params);
+        if(!is_array($result['payload']) || !isset($result['payload']['results']['bindings']))
+        {
+            return null;
+        }
+        foreach($result['payload']['results']['bindings'] as $row)
+        {
+            return $this->translate($row);
+        }
+        return null;
+    }
+
+    /* Fetch a single value */
+    public function value($query)
+    {
+		$params = func_get_args();
+		array_shift($params);
+		$result = $this->execute($query . ' LIMIT 1', $params);
+        if(!is_array($result['payload']) || !isset($result['payload']['results']['bindings']))
+        {
+            return null;
+        }
+        foreach($result['payload']['results']['bindings'] as $row)
+        {
+            $row = $this->translate($row);
+            foreach($row as $value)
+            {
+                return $value;
+            }
+        }
+        return null;
+    }
+    
+    public function valueArray($query, $params)
+    {
+        if(!is_array($params)) $params = array();
+		$result = $this->execute($query . ' LIMIT 1', $params);
+        if(!is_array($result['payload']) || !isset($result['payload']['results']['bindings']))
+        {
+            return null;
+        }
+        foreach($result['payload']['results']['bindings'] as $row)
+        {
+            $row = $this->translate($row);
+            foreach($row as $value)
+            {
+                return $value;
+            }
+        }
+        return null;
+    }
+     
     protected function _quote($str, &$params)
     {
         if(strlen($str) == 2 && ctype_alnum($str[1]))
@@ -153,6 +260,19 @@ class SPARQL implements IDatabase
             return '<' . $param . '>';
         }
         return '"' . addslashes($param) . '"';
+    }
+    
+    protected function translate($binding)
+    {
+        foreach($binding as $k => $v)
+        {
+            if($v['type'] == 'uri')
+            {
+                $v['value'] = new URI($v['value']);
+            }
+            $binding[$k] = $v;
+        }
+        return $binding;
     }
 }
 
