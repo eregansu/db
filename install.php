@@ -30,6 +30,8 @@ class BuiltinDBModuleInstall extends BuiltinModuleInstaller
 		fwrite($file, "\$URI_SCHEMES['mysql']['DBSchema'] = array('file' => PLATFORM_ROOT . 'db/sql/mysql-schema.php', 'class' => 'MySQLSchema');\n");
 		fwrite($file, "\$URI_SCHEMES['sqlite3']['DBSchema'] = array('file' => PLATFORM_ROOT . 'db/sql/sqlite3-schema.php', 'class' => 'SQLite3Schema');\n");
 		fwrite($file, "\$URI_SCHEMES['ldap']['Database'] = array('file' => PLATFORM_ROOT . 'db/directory/ldap.php', 'class' => 'LDAP');\n");
+		fwrite($file, "\$URI_SCHEMES['sparql+http']['Database'] = array('file' => PLATFORM_ROOT . 'db/sparql/sparql.php', 'class' => 'SPARQL');\n");
+		fwrite($file, "\$URI_SCHEMES['sparql+https']['Database'] = array('file' => PLATFORM_ROOT . 'db/sparql/sparql.php', 'class' => 'SPARQL');\n");
 		fwrite($file, "\$URI_SCHEMES['http']['SearchEngine'] = array('file' => PLATFORM_ROOT . 'db/searchengine.php', 'class' => 'GenericWebSearch');\n");
 		fwrite($file, "\$URI_SCHEMES['https']['SearchEngine'] = array('file' => PLATFORM_ROOT . 'db/searchengine.php', 'class' => 'GenericWebSearch');\n");
 		fwrite($file, "\$URI_SCHEMES['dbplite']['SearchEngine'] = array('file' => PLATFORM_ROOT . 'db/search/dbpedialite.php', 'class' => 'DbpediaLiteSearch');\n");
