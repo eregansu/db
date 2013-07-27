@@ -114,9 +114,6 @@ abstract class DBSchema implements IDBSchema
 		return new $c($this, $name, $options);
 	}
 	
-	/* Return the version number of the specified module */
-	abstract public function moduleVersion($moduleId);
-	
 	/* Update the stored version number of the specified module */
 	public function setModuleVersion($moduleId, $newVersion, $comment = null)
 	{
