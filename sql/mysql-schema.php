@@ -255,11 +255,11 @@ class MySQLTable extends DBTable
 				$info['name'] = 'PRIMARY';
 				break;
 			case DBIndex::INDEX:
-				$info['spec'] = 'INDEX "' . $info['name'] . '" (' . implode(', ', $cols) . ')';
+				$info['spec'] = 'INDEX "' . $this->name . '_' . $info['name'] . '" (' . implode(', ', $cols) . ')';
 				$info['fullspec'] = 'CREATE INDEX "' . $this->name . '_' . $info['name'] . '" ON {' . $this->name . '} (' . implode(', ', $cols) . ')';
 				break;
 			case DBIndex::UNIQUE:
-				$info['spec'] = 'UNIQUE KEY "' . $info['name'] . '" (' . implode(', ', $cols) . ')';
+				$info['spec'] = 'UNIQUE KEY "' . $this->name . '_' . $info['name'] . '" (' . implode(', ', $cols) . ')';
 				$info['fullspec'] = 'CREATE UNIQUE INDEX "' . $this->name . '_' .  $info['name'] . '" ON {' . $this->name . '} (' . implode(', ', $cols) . ')';
 				break;
 			default:
@@ -267,6 +267,15 @@ class MySQLTable extends DBTable
 				return false;
 		}
 		return true;
+	}
+	
+	public function dropIndex($name)
+	{
+		if($name !== null && strcmp($name, "PRIMARY"))
+		{
+			$name = $this->name . '_' . $name;
+		}
+		parent::dropIndex($name);
 	}
 	
 	protected function columnFromNative($native)
